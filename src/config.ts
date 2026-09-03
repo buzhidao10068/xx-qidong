@@ -20,6 +20,7 @@ export const RATIO_KEYS = Object.keys(RATIOS) as RatioKey[];
  * 标题可选字体。宋体·明朝最接近原版那种尖锐明体，是默认值。
  * Google Fonts 的 CJK 按 unicode-range 切片，所以每种字体只在真正用到时
  * 才下载对应切片；断网时退到系统字体，形状不同但不会崩。
+ * HoYo 字体来自 https://github.com/SpeedyOrc-C/HoYo-Glyphs
  */
 export const FONTS: Record<FontKey, FontSpec> = {
   song: {
@@ -40,6 +41,36 @@ export const FONTS: Record<FontKey, FontSpec> = {
   shu: {
     label: '手书体',
     stack: '"Ma Shan Zheng","KaiTi",cursive',
+    weight: 400,
+  },
+  teyvat: {
+    label: '提瓦特文（原神·蒙德）',
+    stack: '"Teyvat Black","Noto Serif SC",serif',
+    weight: 400,
+  },
+  inazuma: {
+    label: '稻妻文（原神·稻妻）',
+    stack: '"Inazuma Brush","Noto Serif SC",serif',
+    weight: 400,
+  },
+  sumeru: {
+    label: '须弥文（原神·须弥）',
+    stack: '"Sumeru Scribe","Noto Serif SC",serif',
+    weight: 400,
+  },
+  khaenriah: {
+    label: '坎瑞亚文（原神）',
+    stack: '"Khaenriah Sun","Noto Serif SC",serif',
+    weight: 400,
+  },
+  starrail: {
+    label: '星穹铁道文（崩铁·空间站）',
+    stack: '"Star Rail Neue Sans","Noto Sans SC",sans-serif',
+    weight: 400,
+  },
+  xianzhou: {
+    label: '罗浮文（崩铁·仙舟）',
+    stack: '"Xianzhou Seal","Noto Serif SC",serif',
     weight: 400,
   },
 };
