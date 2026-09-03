@@ -1,6 +1,6 @@
 {
   "name": "xx-qidong",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "把中国大陆游戏版号启动画面做成可高度自定义的模板，导出 PNG",
