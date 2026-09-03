@@ -73,6 +73,26 @@ export const FONTS: Record<FontKey, FontSpec> = {
     stack: '"Xianzhou Seal","Noto Serif SC",serif',
     weight: 400,
   },
+  'khaenriah-chasm': {
+    label: '坎瑞亚文·层岩巨渊（原神）',
+    stack: '"Khaenriah Sun Chasm","Noto Serif SC",serif',
+    weight: 400,
+  },
+  deshret: {
+    label: '赤冠文（原神·须弥）',
+    stack: '"Deshret Inscription","Noto Serif SC",serif',
+    weight: 400,
+  },
+  'zzz-system': {
+    label: '绝区零系统文（绝区零）',
+    stack: '"ZZZ System","Noto Sans SC",sans-serif',
+    weight: 400,
+  },
+  'zzz-a': {
+    label: '绝区零甲文（绝区零）',
+    stack: '"ZZZ A","Noto Sans SC",sans-serif',
+    weight: 400,
+  },
 };
 
 export const FONT_KEYS = Object.keys(FONTS) as FontKey[];
