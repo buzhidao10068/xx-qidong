@@ -24,6 +24,36 @@ npm run build
 npm run preview  # 预览 dist/ 产物
 ```
 
+## 部署
+
+### Cloudflare Pages
+
+**方式 1：GitHub 自动部署（推荐）**
+
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. 进入 **Workers & Pages** → **Create application** → **Pages** → **Connect to Git**
+3. 选择此仓库并配置：
+   - **Framework preset**: Vite
+   - **Build command**: `npm run build`
+   - **Build output directory**: `dist`
+4. 保存后自动部署，之后每次推送 main 分支自动更新
+
+**方式 2：本地构建 + Wrangler CLI**
+
+```bash
+npm run build
+npx wrangler pages deploy dist --project-name=xx-qidong
+```
+
+首次部署需先创建项目：`npx wrangler pages project create xx-qidong --production-branch=main`
+
+### GitHub Pages
+
+```bash
+npm run build
+# 将 dist/ 目录推送到 gh-pages 分支，或在仓库 Settings → Pages 配置 GitHub Actions 自动部署
+```
+
 ## 技术栈
 
 - **Vite** + **TypeScript** (strict)
