@@ -93,6 +93,11 @@ export const FONTS: Record<FontKey, FontSpec> = {
     stack: '"ZZZ A","Noto Sans SC",sans-serif',
     weight: 400,
   },
+  endfield: {
+    label: '终末地文（明日方舟：终末地）',
+    stack: '"Endfield By Butan","Noto Serif SC",serif',
+    weight: 400,
+  },
 };
 
 export const FONT_KEYS = Object.keys(FONTS) as FontKey[];

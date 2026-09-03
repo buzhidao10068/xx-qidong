@@ -11,7 +11,7 @@
 
 export type RatioKey = '16:9' | '4:3' | '1:1' | '9:16';
 
-export type FontKey = 'song' | 'hei' | 'kai' | 'shu' | 'teyvat' | 'inazuma' | 'sumeru' | 'khaenriah' | 'khaenriah-chasm' | 'deshret' | 'starrail' | 'xianzhou' | 'zzz-system' | 'zzz-a';
+export type FontKey = 'song' | 'hei' | 'kai' | 'shu' | 'teyvat' | 'inazuma' | 'sumeru' | 'khaenriah' | 'khaenriah-chasm' | 'deshret' | 'starrail' | 'xianzhou' | 'zzz-system' | 'zzz-a' | 'endfield';
 
 /** 四芒星的一个实例 */
 export interface StarState {
