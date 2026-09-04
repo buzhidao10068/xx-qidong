@@ -4,6 +4,7 @@ import {
   FONTS,
   FONT_KEYS,
   MAX_STARS,
+  MAX_TITLE_LEN,
   RANGES,
   RATIO_KEYS,
 } from '../config';
@@ -101,6 +102,21 @@ export function createControls(host: ControlsHost): Controls {
   const rt = host.rt;
 
   // ---- 一次性搭控件 ----
+  /**
+   * 上限在 config，不写死在 index.html 上 —— 和 normalizeState 的截断同一份数字。
+   *
+   * 注意两边的「一个字」不是一回事：`maxLength` 按 UTF-16 码元算，
+   * `normalizeState` 按码点算。方向是安全的（码点数 ≤ 码元数），所以键入和粘贴
+   * 都不可能让状态超过上限，输入框的 `input` 事件里不必再截一次；代价是纯 emoji
+   * 标题在框里只能敲到 6 个，而粘贴配置 JSON 能留下 12 个。要让两边严格一致就得
+   * 上 `beforeinput` 自己数码点，不值当。
+   */
+  const titleInput = el<HTMLInputElement>('f-title');
+  titleInput.maxLength = MAX_TITLE_LEN;
+
+  const dim = el<HTMLInputElement>('f-dim');
+  const dimField = el('dim-field');
+
   const font = el<HTMLSelectElement>('f-font');
   for (const key of FONT_KEYS) {
     const option = document.createElement('option');
@@ -170,6 +186,20 @@ export function createControls(host: ControlsHost): Controls {
     el('star-note').textContent = off ? '已关闭' : '拖动可移动';
   }
 
+  /**
+   * 底色蒙版只作用于背景图（`canvas.ts` 的 drawCover 才读 state.dim），
+   * 没有图的时候拖它不会有任何变化 —— 置灰说明这一点，而不是让它看着像坏了。
+   *
+   * 说明文字挂在外层 `.field` 上而不是滑块本身：Chrome 不给 disabled 的表单控件
+   * 派发 hover，挂在滑块上的 title 恰好在需要它的时候不显示。
+   */
+  function syncDim(): void {
+    const off = rt.background === null;
+    dim.disabled = off;
+    if (off) dimField.title = '先选一张背景图';
+    else dimField.removeAttribute('title');
+  }
+
   function syncStar(): void {
     const star = rt.state.stars[rt.selected];
     if (!star) return;
@@ -181,7 +211,7 @@ export function createControls(host: ControlsHost): Controls {
 
   function sync(): void {
     const state = rt.state;
-    el<HTMLInputElement>('f-title').value = state.title;
+    titleInput.value = state.title;
     font.value = state.font;
     el<HTMLTextAreaElement>('f-warn').value = state.warn;
     el<HTMLTextAreaElement>('f-lines').value = state.lines.join('\n');
@@ -196,6 +226,8 @@ export function createControls(host: ControlsHost): Controls {
     setPressed(chips, state.preset);
     buildStarSel();
     syncStar();
+    // sync() 覆盖了初始化、模板、重置、应用配置这几条整体换状态的路径
+    syncDim();
   }
 
   function selectStar(index: number): void {
@@ -229,8 +261,8 @@ export function createControls(host: ControlsHost): Controls {
   }
 
   // 改文字和字体会触发新的字体切片下载，所以走 reflow 而不是 paint
-  el<HTMLInputElement>('f-title').addEventListener('input', (e) => {
-    rt.state.title = (e.currentTarget as HTMLInputElement).value;
+  titleInput.addEventListener('input', () => {
+    rt.state.title = titleInput.value;
     host.reflow();
   });
   font.addEventListener('change', () => {
@@ -312,6 +344,7 @@ export function createControls(host: ControlsHost): Controls {
       const img = new Image();
       img.addEventListener('load', () => {
         rt.background = img;
+        syncDim();
         host.paint();
       });
       img.src = String(reader.result);
@@ -322,6 +355,7 @@ export function createControls(host: ControlsHost): Controls {
   el('btn-clearimg').addEventListener('click', () => {
     rt.background = null;
     bgFile.value = '';
+    syncDim();
     host.paint();
   });
 

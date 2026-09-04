@@ -1,4 +1,4 @@
-import type { FontKey, FontSpec, NumRange, RatioKey } from './types';
+import type { FontKey, FontSpec, NumRange, RatioKey, StarState } from './types';
 
 /** localStorage 键；改这个会让老用户的配置失效，改之前先想清楚 */
 export const STORAGE_KEY = 'xx-qidong-v1';
@@ -115,7 +115,28 @@ export const BLOCK_MAX_WIDTH_RATIO = 0.945;
 /** 四芒星控制点向中心收拢的系数，决定芒的凹陷程度 */
 export const STAR_CONCAVITY = 0.11;
 
-export const MAX_STARS = 3;
+/**
+ * 星芒槽位的默认参数，一项一个槽位。默认摆位复刻原版：一根长芒穿过「神」字
+ * 右竖，左上一颗小的。
+ *
+ * 这个数组的长度**就是**星芒数量上限 —— 加减槽位改这里一处即可，
+ * `MAX_STARS` 跟着走。曾经是「这里 3 项 + 那里写个 3」，两个数字必须相等却
+ * 没人保证，把上限调大就会得到「数量能选到 4，但第 4 颗画不出来」的状态。
+ *
+ * 类型写成「至少一项」的元组而不是 `readonly StarState[]`：这样下标 0 恒有值，
+ * 取兜底槽位不需要 `!` 断言（`quality-guidelines.md` 把它列为禁用写法）。
+ */
+export const DEFAULT_STARS: readonly [StarState, ...StarState[]] = [
+  { x: 0.578, y: 0.5, size: 17, aspect: 20, rot: 0 },
+  { x: 0.497, y: 0.443, size: 4.5, aspect: 32, rot: 0 },
+  { x: 0.66, y: 0.42, size: 3, aspect: 42, rot: 0 },
+];
+
+/** 星芒数量上限。派生自 `DEFAULT_STARS`，不单独维护 */
+export const MAX_STARS = DEFAULT_STARS.length;
+
+/** 标题字数上限（按码点算）。状态归一化的截断和输入框的 maxlength 都读这一份 */
+export const MAX_TITLE_LEN = 12;
 
 /**
  * 滑块区间。**状态归一化的 clamp 和 UI 上的 min/max/step 都读这一份**，

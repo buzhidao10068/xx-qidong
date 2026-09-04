@@ -3,3 +3,5 @@ dist/
 *.local
 .DS_Store
 Thumbs.db
+# Playwright MCP 的本地截图产物
+.playwright-mcp/
