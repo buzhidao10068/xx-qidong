@@ -101,6 +101,48 @@ const frames: FrameHooks = {
   restore: () => paint(),
 };
 
+/**
+ * 弹窗是 `aria-modal`，那就得真的把焦点关在里面：否则 Tab 会走到背后的控制面板
+ * 上去，键盘用户改着看不见的滑块。关闭后焦点回到打开它的那个按钮。
+ */
+let restoreFocus: HTMLElement | null = null;
+
+function isExportOpen(): boolean {
+  return veil.classList.contains('on');
+}
+
+/**
+ * 弹窗里可聚焦的只有几个按钮和那个下载链接（预览图没有 tabindex，不进 Tab 序）。
+ * 排掉 disabled 的：`focus()` 对它无效，而下面已经 `preventDefault()` 掉了 Tab，
+ * 真让它当上首项或末项就会把焦点卡死。
+ */
+function veilFocusables(): HTMLElement[] {
+  return [...veil.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]')];
+}
+
+function trapTab(e: KeyboardEvent): void {
+  const items = veilFocusables();
+  const first = items[0];
+  const last = items.at(-1);
+  if (!first || !last) return;
+
+  const active = document.activeElement;
+  // 焦点不在弹窗里：点了预览图或弹窗留白（浏览器会把焦点退回 body），
+  // 或者刚从地址栏 Tab 回来。这时先把它收回弹窗，别让 Tab 走到背后去
+  if (!(active instanceof HTMLElement) || !veil.contains(active)) {
+    e.preventDefault();
+    (e.shiftKey ? last : first).focus();
+    return;
+  }
+  if (e.shiftKey && active === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && active === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
 function openExport(): void {
   const url = toPngDataUrl(canvas, frames);
   const [w, h] = RATIOS[rt.state.ratio];
@@ -110,20 +152,28 @@ function openExport(): void {
   link.download = downloadName(rt.state.title);
   el('ex-status').textContent = `${w} × ${h}`;
   el('ex-note').textContent = '若浏览器拦截了下载，在图片上右键选择「图片另存为」同样可以保存。';
+  restoreFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   veil.classList.add('on');
   el('btn-close').focus();
 }
 
 function closeExport(): void {
+  // 幂等：重复关不会把 restoreFocus 抢给一个早已换掉的元素
+  if (!isExportOpen()) return;
   veil.classList.remove('on');
+  restoreFocus?.focus();
+  restoreFocus = null;
 }
 
 el('btn-close').addEventListener('click', closeExport);
 veil.addEventListener('click', (e) => {
   if (e.target === veil) closeExport();
 });
+// 只在弹窗开着时接管键盘，别抢走页面正常的 Tab 顺序
 document.addEventListener('keydown', (e) => {
+  if (!isExportOpen()) return;
   if (e.key === 'Escape') closeExport();
+  else if (e.key === 'Tab') trapTab(e);
 });
 
 el('btn-copy').addEventListener('click', () => {
