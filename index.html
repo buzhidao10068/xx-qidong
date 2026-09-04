@@ -202,6 +202,10 @@ input[type=range]::-webkit-slider-thumb{
   background:var(--gold);border-radius:50%;border:none;
 }
 input[type=range]:hover::-webkit-slider-thumb{background:var(--gold-2)}
+/* 禁用态：底色蒙版没有背景图时不起作用，置灰而不是让它看着像坏了 */
+input[type=range]:disabled{cursor:not-allowed;opacity:.4}
+input[type=range]:disabled::-webkit-slider-thumb{background:var(--tx-3)}
+input[type=range]:disabled::-moz-range-thumb{background:var(--tx-3)}
 input[type=range]::-moz-range-track{height:2px;background:var(--line-2)}
 input[type=range]::-moz-range-thumb{
   width:11px;height:11px;background:var(--gold);border:none;border-radius:50%;
@@ -341,7 +345,8 @@ details .stack{margin-top:10px}
         <div class="stack">
           <div class="field">
             <label class="lbl" for="f-title">文字</label>
-            <input type="text" id="f-title" class="title-in" maxlength="12" autocomplete="off">
+            <!-- maxlength 由 controls.ts 从 MAX_TITLE_LEN 写入，不在这里硬编码 -->
+            <input type="text" id="f-title" class="title-in" autocomplete="off">
           </div>
           <div class="field">
             <label class="lbl" for="f-font">字体</label>
@@ -449,7 +454,9 @@ details .stack{margin-top:10px}
             <summary>背景图</summary>
             <div class="stack">
               <input type="file" id="f-bgimg" accept="image/*">
-              <div class="field">
+              <!-- 无背景图时 controls.ts 会禁用滑块，并把说明挂在这层 div 上：
+                   disabled 的表单控件在 Chrome 里不响应 hover，title 得由外层承担 -->
+              <div class="field" id="dim-field">
                 <label class="lbl" for="f-dim">底色蒙版<span class="v" id="v-dim"></span></label>
                 <input type="range" id="f-dim">
               </div>

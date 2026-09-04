@@ -1,7 +1,9 @@
 import {
+  DEFAULT_STARS,
   DRAG_BOUND,
   FONTS,
   MAX_STARS,
+  MAX_TITLE_LEN,
   RANGES,
   RATIOS,
   STORAGE_KEY,
@@ -17,13 +19,6 @@ import type { AppState, FontKey, NumRange, RatioKey, StarState } from './types';
  * 本模块不 import 任何 render/ui 模块，也不引用 document —— 于是可以在
  * node 下直接测。
  */
-
-/** 默认星芒摆位复刻原版：一根长芒穿过「神」字右竖，左上一颗小的 */
-export const DEFAULT_STARS: readonly StarState[] = [
-  { x: 0.578, y: 0.5, size: 17, aspect: 20, rot: 0 },
-  { x: 0.497, y: 0.443, size: 4.5, aspect: 32, rot: 0 },
-  { x: 0.66, y: 0.42, size: 3, aspect: 42, rot: 0 },
-];
 
 export const DEFAULT_STATE: AppState = {
   preset: DEFAULT_PRESET.key,
@@ -105,8 +100,38 @@ function text(raw: unknown, fallback: string): string {
   return typeof raw === 'string' ? raw : fallback;
 }
 
+/**
+ * 标题额外限长。输入框的 `maxlength` 拦不住粘贴进来的配置 JSON 和
+ * localStorage 里的旧值 —— 超长标题会一路排到画面外面去，且此后每次打开都是
+ * 这个坏状态。上限属于状态层，UI 的 `maxlength` 读同一份常量。
+ *
+ * 先 `Array.from` 再切：按码点切，不按 UTF-16 码元 —— 直接 `String.slice` 的
+ * 截断处可能落在代理对中间，切出半个 emoji。
+ *
+ * 这里刻意不用 `Intl.Segmenter` 按字素簇切，尽管 `quality-guidelines.md` 把
+ * `Array.from` 分字列为「今后禁用」：限长的单位必须和排版的单位一致。
+ * `logotype.ts` 是按码点逐个摆字盒的，一个 12 字素的标题可能有三十几个码点、
+ * 照样排到画面外面去 —— 那就白限了。等 `logotype.ts` 换成字素簇，这里再一起换。
+ *
+ * 命名沿用 `color()` 的路子：按字段命名的归一化器。兜底值也走同一条截断路径，
+ * 所以默认值超限时同样会被收进上限内（`clampTo` 那边反而漏了这一手）。
+ */
+function title(raw: unknown, fallback: string): string {
+  return Array.from(text(raw, fallback)).slice(0, MAX_TITLE_LEN).join('');
+}
+
 function color(raw: unknown, fallback: string): string {
   return typeof raw === 'string' && HEX_COLOR.test(raw) ? raw.toLowerCase() : fallback;
+}
+
+/**
+ * 第 i 个槽位的默认参数。`MAX_STARS` 派生自 `DEFAULT_STARS` 的长度，所以调用处
+ * 的下标恒在范围内，`??` 分支跑不到 —— 它在这里是为了满足
+ * `noUncheckedIndexedAccess`：万一将来有人把上限和这份数据解耦，拿到的也是
+ * 一个能直接渲染的槽位，而不是 undefined。
+ */
+function slotDefault(i: number): StarState {
+  return DEFAULT_STARS[i] ?? DEFAULT_STARS[0];
 }
 
 function normalizeStar(raw: unknown, fallback: StarState): StarState {
@@ -145,7 +170,7 @@ export function normalizeState(raw: unknown): AppState {
     fg: color(o.fg, d.fg),
     dim: clampTo(o.dim, d.dim, RANGES.dim),
 
-    title: text(o.title, d.title),
+    title: title(o.title, d.title),
     font: isFontKey(o.font) ? o.font : d.font,
     logoSize: clampTo(o.logoSize, d.logoSize, RANGES.logoSize),
     tracking: clampTo(o.tracking, d.tracking, RANGES.tracking),
@@ -154,8 +179,8 @@ export function normalizeState(raw: unknown): AppState {
 
     starCount: clampInt(o.starCount, d.starCount, 0, MAX_STARS),
     // 恒定补齐到 MAX_STARS 项：starCount 调小再调大时，原来的参数还在
-    stars: DEFAULT_STARS.map((def, i) =>
-      normalizeStar(Array.isArray(o.stars) ? o.stars[i] : undefined, def),
+    stars: Array.from({ length: MAX_STARS }, (_, i) =>
+      normalizeStar(Array.isArray(o.stars) ? o.stars[i] : undefined, slotDefault(i)),
     ),
 
     warn: text(o.warn, d.warn),

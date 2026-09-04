@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_STARS, RANGES } from '../src/config';
+import { DEFAULT_STARS, MAX_STARS, MAX_TITLE_LEN, RANGES } from '../src/config';
 import {
   applyPreset,
   defaultState,
-  DEFAULT_STARS,
   loadState,
   normalizeState,
   parseConfig,
@@ -77,7 +76,7 @@ describe('normalizeState — stars 与 lines', () => {
     expect(s.stars).toHaveLength(MAX_STARS);
     expect(s.stars[0]!.size).toBe(30);
     // 未给的字段来自该槽位的默认值，不是第 0 槽
-    expect(s.stars[0]!.aspect).toBe(DEFAULT_STARS[0]!.aspect);
+    expect(s.stars[0]!.aspect).toBe(DEFAULT_STARS[0].aspect);
     expect(s.stars[1]).toEqual(DEFAULT_STARS[1]);
   });
 
@@ -91,11 +90,59 @@ describe('normalizeState — stars 与 lines', () => {
     expect(normalizeState({ starCount: 1.9 }).starCount).toBe(1);
   });
 
+  /**
+   * 上限与槽位默认值必须是同一份数据的两面。曾经是两处各写一个 3，把上限调大
+   * 就会得到「数量能选到 4，但第 4 颗没有默认参数、画不出来」的状态。
+   */
+  it('槽位数量上限派生自 DEFAULT_STARS，不是另写一个数字', () => {
+    expect(MAX_STARS).toBe(DEFAULT_STARS.length);
+  });
+
+  it('每个可选中的槽位都有完整的默认参数', () => {
+    const { stars } = normalizeState({});
+    expect(stars).toHaveLength(MAX_STARS);
+    // starCount 能选到 MAX_STARS，所以每一项都得是能直接渲染的 StarState
+    for (const star of stars) {
+      for (const key of ['x', 'y', 'size', 'aspect', 'rot'] as const) {
+        expect(Number.isFinite(star[key])).toBe(true);
+      }
+    }
+  });
+
   it('lines 接受数组、字符串，并滤掉非字符串项', () => {
     expect(normalizeState({ lines: ['a', 'b'] }).lines).toEqual(['a', 'b']);
     expect(normalizeState({ lines: 'a\nb' }).lines).toEqual(['a', 'b']);
     expect(normalizeState({ lines: ['a', 3, null] }).lines).toEqual(['a']);
     expect(normalizeState({ lines: [] }).lines).toEqual([]);
+  });
+});
+
+/**
+ * 输入框的 maxlength 拦不住粘贴进来的配置 JSON 和 localStorage 里的旧值，
+ * 所以上限得在状态层。
+ */
+describe('normalizeState — 标题长度', () => {
+  it('不超限的标题一字不改', () => {
+    expect(normalizeState({ title: '原神' }).title).toBe('原神');
+    expect(normalizeState({ title: '' }).title).toBe('');
+  });
+
+  it('超长标题截到上限，不让它排到画面外面去', () => {
+    const title = normalizeState({ title: '启'.repeat(200) }).title;
+    expect(Array.from(title)).toHaveLength(MAX_TITLE_LEN);
+  });
+
+  it('按码点截断，不切出半个代理对', () => {
+    // 每个 emoji 占两个 UTF-16 码元；按码元切会在中间断开、产生孤立代理
+    const title = normalizeState({ title: '🌟'.repeat(MAX_TITLE_LEN + 5) }).title;
+    expect(Array.from(title)).toHaveLength(MAX_TITLE_LEN);
+    expect(title).toBe('🌟'.repeat(MAX_TITLE_LEN));
+    expect(title).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
+  });
+
+  it('往返之后长度不再变化（截断是幂等的）', () => {
+    const once = normalizeState({ title: '启'.repeat(50) });
+    expect(parseConfig(serializeState(once))).toEqual(once);
   });
 });
 
